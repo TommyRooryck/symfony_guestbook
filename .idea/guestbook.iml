@@ -32,6 +32,7 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/nikic/php-parser" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/ocramius/proxy-manager" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/pagerfanta/pagerfanta" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/paragonie/sodium_compat" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/psr/cache" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/psr/container" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/psr/event-dispatcher" />
@@ -57,6 +58,8 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/flex" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/form" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/framework-bundle" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/http-client" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/http-client-contracts" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/http-foundation" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/http-kernel" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/symfony/inflector" />
