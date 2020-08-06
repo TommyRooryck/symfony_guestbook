@@ -6,11 +6,13 @@ use App\Message\CommentMessage;
 use App\Repository\CommentRepository;
 use App\SpamChecker;
 use Doctrine\ORM\EntityManagerInterface;
-use phpDocumentor\Reflection\Types\This;
 use Psr\Log\LoggerInterface;
+use Symfony\Bridge\Twig\Mime\NotificationEmail;
+use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Workflow\WorkflowInterface;
+use Twig\Environment;
 
 class CommentMessageHandler implements MessageHandlerInterface
 {
@@ -19,6 +21,9 @@ class CommentMessageHandler implements MessageHandlerInterface
     private $commentRepository;
     private $bus;
     private $workflow;
+    private $mailer;
+    private $twig;
+    private $adminEmail;
     private $logger;
 
     public function __construct(
@@ -27,6 +32,10 @@ class CommentMessageHandler implements MessageHandlerInterface
         CommentRepository $commentRepository,
         MessageBusInterface $bus,
         WorkflowInterface $commentStateMachine,
+//        \Swift_Mailer $mailer,
+        MailerInterface $mailer,
+        Environment $twig,
+        string $adminEmail,
         LoggerInterface $logger = null
         )
     {
@@ -35,6 +44,9 @@ class CommentMessageHandler implements MessageHandlerInterface
         $this->commentRepository = $commentRepository;
         $this->bus = $bus;
         $this->workflow = $commentStateMachine;
+        $this->mailer = $mailer;
+        $this->twig = $twig;
+        $this->adminEmail = $adminEmail;
         $this->logger = $logger;
     }
 
@@ -58,7 +70,34 @@ class CommentMessageHandler implements MessageHandlerInterface
 
            $this->bus->dispatch($message);
        }  elseif ($this->workflow->can($comment, 'publish') || $this->workflow->can($comment, 'publish_ham')){
-           $this->workflow->apply($comment, $this->workflow->can($comment, 'publish') ? 'publish' : 'publish_ham');
+//            $this->mailer->send($this->mail
+//                ->setSubject('New Comment Posted')
+//                ->setTo($this->adminEmail)
+//                ->setFrom($this->adminEmail)
+//                ->setBody($this->twig->render('emails/comment_notification.html.twig'))
+//            );
+
+
+//           $message = (new \Swift_Message('New Comment Posted'))
+//               ->setFrom($this->adminEmail)
+//               ->setTo($this->adminEmail)
+//               ->setBody(
+//                   '<html>' .
+//                   '<body>' .
+//                   '   <button style="margin:10px;" href="{{ url(\'review_comment\', {id: comment.id}) }}">Accept</button>' .
+//                   ' <button href="{{ url(\'review_comment\', { id: comment.id, reject: true }) }}">Reject</button>',
+//                   'text/html')
+//               ;
+//           $this->mailer->send($message);
+
+           $this->mailer->send((new NotificationEmail())
+                   ->subject('New comment posted')
+                   ->htmlTemplate('emails/comment_notification.html.twig')
+                          ->from($this->adminEmail)
+                           ->to($this->adminEmail)
+                          ->context(['comment' => $comment])
+                      );
+
        } elseif($this->logger){
            $this->logger->debug('Dropping comment message', ['comment' =>$comment->getId(), 'state' => $comment->getState()]);
        }
