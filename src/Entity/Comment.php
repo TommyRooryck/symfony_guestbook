@@ -21,20 +21,16 @@ class Comment
 
     /**
      * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank
      */
     private $author;
 
     /**
      * @ORM\Column(type="text")
-     * @Assert\NotBlank
      */
     private $text;
 
     /**
      * @ORM\Column(type="string", length=255)
-     * @Assert\NotBlank
-     * @Assert\Email
      */
     private $email;
 
@@ -53,6 +49,16 @@ class Comment
      * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $photoFilename;
+
+    /**
+     * @ORM\Column(type="string", length=255, options={"default": "submitted"})
+     */
+    private $state = 'submitted';
+
+    public function __toString(): string
+    {
+        return (string) $this->getEmail();
+    }
 
     public function getId(): ?int
     {
@@ -139,8 +145,15 @@ class Comment
         return $this;
     }
 
-    public function __toString(): string
+    public function getState(): ?string
     {
-        return (string) $this->getEmail();
+        return $this->state;
+    }
+
+    public function setState(string $state): self
+    {
+        $this->state = $state;
+
+        return $this;
     }
 }
