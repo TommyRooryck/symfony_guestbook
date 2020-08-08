@@ -1,0 +1,4 @@
+services:
+  _defaults:
+    bind:
+      $photoDir: "%kernel_project_dir%/public/uploads/photos"

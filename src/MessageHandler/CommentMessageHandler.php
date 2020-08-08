@@ -2,12 +2,14 @@
 
 namespace App\MessageHandler;
 
+use App\ImageOptimizer;
 use App\Message\CommentMessage;
 use App\Repository\CommentRepository;
 use App\SpamChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Twig\Mime\NotificationEmail;
+use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -23,7 +25,9 @@ class CommentMessageHandler implements MessageHandlerInterface
     private $workflow;
     private $mailer;
     private $twig;
+    private $imageOptimizer;
     private $adminEmail;
+    private $photoDir;
     private $logger;
 
     public function __construct(
@@ -35,7 +39,9 @@ class CommentMessageHandler implements MessageHandlerInterface
 //        \Swift_Mailer $mailer,
         MailerInterface $mailer,
         Environment $twig,
+        ImageOptimizer $imageOptimizer,
         string $adminEmail,
+        string $photoDir,
         LoggerInterface $logger = null
         )
     {
@@ -46,7 +52,9 @@ class CommentMessageHandler implements MessageHandlerInterface
         $this->workflow = $commentStateMachine;
         $this->mailer = $mailer;
         $this->twig = $twig;
+        $this->imageOptimizer;
         $this->adminEmail = $adminEmail;
+        $this->photoDir;
         $this->logger = $logger;
     }
 
@@ -70,25 +78,6 @@ class CommentMessageHandler implements MessageHandlerInterface
 
            $this->bus->dispatch($message);
        }  elseif ($this->workflow->can($comment, 'publish') || $this->workflow->can($comment, 'publish_ham')){
-//            $this->mailer->send($this->mail
-//                ->setSubject('New Comment Posted')
-//                ->setTo($this->adminEmail)
-//                ->setFrom($this->adminEmail)
-//                ->setBody($this->twig->render('emails/comment_notification.html.twig'))
-//            );
-
-
-//           $message = (new \Swift_Message('New Comment Posted'))
-//               ->setFrom($this->adminEmail)
-//               ->setTo($this->adminEmail)
-//               ->setBody(
-//                   '<html>' .
-//                   '<body>' .
-//                   '   <button style="margin:10px;" href="{{ url(\'review_comment\', {id: comment.id}) }}">Accept</button>' .
-//                   ' <button href="{{ url(\'review_comment\', { id: comment.id, reject: true }) }}">Reject</button>',
-//                   'text/html')
-//               ;
-//           $this->mailer->send($message);
 
            $this->mailer->send((new NotificationEmail())
                    ->subject('New comment posted')
@@ -97,6 +86,14 @@ class CommentMessageHandler implements MessageHandlerInterface
                            ->to($this->adminEmail)
                           ->context(['comment' => $comment])
                       );
+
+       }elseif ($this->workflow->can($comment, 'optimize')){
+           if ($comment->getPhotoFilename()){
+               $this->imageOptimizer->resize($this->photoDir . '/' . $comment->getPhotoFilename());
+           }
+
+           $this->workflow->apply($comment, 'optimize');
+           $this->entityManager->flush();
 
        } elseif($this->logger){
            $this->logger->debug('Dropping comment message', ['comment' =>$comment->getId(), 'state' => $comment->getState()]);
