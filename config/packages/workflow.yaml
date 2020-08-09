@@ -36,10 +36,7 @@ framework:
                     to:   rejected
                 publish_ham:
                     from: ham
-                    to:   ready
+                    to:   published
                 reject_ham:
                     from: ham
                     to:   rejected
-                optimize:
-                    from: ready
-                    to: published

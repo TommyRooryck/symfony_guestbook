@@ -13,7 +13,11 @@ use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Handler\MessageHandlerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Notifier\Notification\Notification;
+use Symfony\Component\Notifier\NotifierInterface;
+use Symfony\Component\Notifier\Recipient\AdminRecipient;
 use Symfony\Component\Workflow\WorkflowInterface;
+use App\Notification\CommentReviewNotification;
 use Twig\Environment;
 
 class CommentMessageHandler implements MessageHandlerInterface
@@ -23,7 +27,8 @@ class CommentMessageHandler implements MessageHandlerInterface
     private $commentRepository;
     private $bus;
     private $workflow;
-    private $mailer;
+//    private $mailer;
+    private $notifier;
     private $twig;
     private $imageOptimizer;
     private $adminEmail;
@@ -37,7 +42,8 @@ class CommentMessageHandler implements MessageHandlerInterface
         MessageBusInterface $bus,
         WorkflowInterface $commentStateMachine,
 //        \Swift_Mailer $mailer,
-        MailerInterface $mailer,
+//        MailerInterface $mailer,
+        NotifierInterface $notifier,
         Environment $twig,
         ImageOptimizer $imageOptimizer,
         string $adminEmail,
@@ -50,7 +56,8 @@ class CommentMessageHandler implements MessageHandlerInterface
         $this->commentRepository = $commentRepository;
         $this->bus = $bus;
         $this->workflow = $commentStateMachine;
-        $this->mailer = $mailer;
+//        $this->mailer = $mailer;
+        $this->notifier = $notifier;
         $this->twig = $twig;
         $this->imageOptimizer;
         $this->adminEmail = $adminEmail;
@@ -79,24 +86,23 @@ class CommentMessageHandler implements MessageHandlerInterface
            $this->bus->dispatch($message);
        }  elseif ($this->workflow->can($comment, 'publish') || $this->workflow->can($comment, 'publish_ham')){
 
-           $this->mailer->send((new NotificationEmail())
-                   ->subject('New comment posted')
-                   ->htmlTemplate('emails/comment_notification.html.twig')
-                          ->from($this->adminEmail)
-                           ->to($this->adminEmail)
-                          ->context(['comment' => $comment])
-                      );
-
-       }elseif ($this->workflow->can($comment, 'optimize')){
-           if ($comment->getPhotoFilename()){
-               $this->imageOptimizer->resize($this->photoDir . '/' . $comment->getPhotoFilename());
-           }
-
-           $this->workflow->apply($comment, 'optimize');
-           $this->entityManager->flush();
+          $notification = new CommentReviewNotification($comment, $message->getReviewURL());
+          $this->notifier->send($notification, ...$this->notifier->getAdminRecipients());
 
        } elseif($this->logger){
            $this->logger->debug('Dropping comment message', ['comment' =>$comment->getId(), 'state' => $comment->getState()]);
        }
+
+       if ($comment->getState() == 'published'){
+           $recipient = new AdminRecipient(
+               $comment->getEmail()
+           );
+
+           $notification2 = (new Notification('Comment Review'))
+               ->content('Your comment was accepted ');
+
+           $this->notifier->send($notification2, $recipient);
+       }
+
     }
 }
