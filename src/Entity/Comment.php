@@ -17,7 +17,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  *     collectionOperations={"get"={"normalization_context" = {"groups"="comment:list"}}},
  *     itemOperations={"get"={"normalization_context"={"groups"="comment:item"}}},
  *     order={"createdAt" = "DESC"},
- *     paginationEnabled= "false"
+ *
  * )
  * @ApiFilter(SearchFilter::class, properties={"conference": "exact"})
  */
